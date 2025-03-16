@@ -137,6 +137,8 @@ uint8_t SCCB_Read(uint8_t slv_addr, uint8_t reg)
     if(ret != ESP_OK) {
         ESP_LOGE(TAG, "SCCB_Read Failed addr:0x%02x, reg:0x%02x, data:0x%02x, ret:%d", slv_addr, reg, data, ret);
     }
+    ESP_LOGE(TAG, "SCCB_Read Blub addr:0x%02x, reg:0x%02x, data:0x%02x, ret:%d", slv_addr, reg, data, ret);
+
     return data;
 }
 
@@ -154,6 +156,8 @@ int SCCB_Write(uint8_t slv_addr, uint8_t reg, uint8_t data)
     if(ret != ESP_OK) {
         ESP_LOGE(TAG, "SCCB_Write Failed addr:0x%02x, reg:0x%02x, data:0x%02x, ret:%d", slv_addr, reg, data, ret);
     }
+ESP_LOGE(TAG, "SCCB_Write Blub addr:0x%02x, reg:0x%02x, data:0x%02x, ret:%d", slv_addr, reg, data, ret);
+
     return ret == ESP_OK ? 0 : -1;
 }
 
