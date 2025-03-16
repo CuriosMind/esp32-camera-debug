@@ -7,6 +7,11 @@
  *
  */
 
+#include "esp_vfs.h"
+#include "esp_spiffs.h"
+#include <sys/unistd.h>
+#include <sys/stat.h>
+
 #include <stdbool.h>
 #include <string.h>
 #include <freertos/FreeRTOS.h>
@@ -47,6 +52,21 @@ const int SCCB_I2C_PORT_DEFAULT = 0;
 static int sccb_i2c_port;
 static bool sccb_owns_i2c_port;
 static const char* TAG = "MY_I2C";
+void init_spiffs() {
+    esp_vfs_spiffs_conf_t conf = {
+        .base_path = "/spiffs",
+        .partition_label = NULL,
+        .max_files = 5,
+        .format_if_mount_failed = true
+    };
+
+    esp_err_t ret = esp_vfs_spiffs_register(&conf);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to mount or format SPIFFS");
+    } else {
+        ESP_LOGI(TAG, "SPIFFS initialized successfully");
+    }
+}
 
 int SCCB_Init(int pin_sda, int pin_scl)
 {
@@ -116,32 +136,43 @@ uint8_t SCCB_Probe(void)
     return 0;
 }
 
-uint8_t SCCB_Read(uint8_t slv_addr, uint8_t reg)
-{
-    uint8_t data=0;
+uint8_t SCCB_Read(uint8_t slv_addr, uint8_t reg) {
+    uint8_t data = 0;
     esp_err_t ret = ESP_FAIL;
+
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, ( slv_addr << 1 ) | WRITE_BIT, ACK_CHECK_EN);
+    i2c_master_write_byte(cmd, (slv_addr << 1) | WRITE_BIT, ACK_CHECK_EN);
     i2c_master_write_byte(cmd, reg, ACK_CHECK_EN);
     i2c_master_stop(cmd);
     ret = i2c_master_cmd_begin(sccb_i2c_port, cmd, 1000 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
-    if(ret != ESP_OK) return -1;
+    if (ret != ESP_OK) return -1;
+
     cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, ( slv_addr << 1 ) | READ_BIT, ACK_CHECK_EN);
+    i2c_master_write_byte(cmd, (slv_addr << 1) | READ_BIT, ACK_CHECK_EN);
     i2c_master_read_byte(cmd, &data, NACK_VAL);
     i2c_master_stop(cmd);
     ret = i2c_master_cmd_begin(sccb_i2c_port, cmd, 1000 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
-    if(ret != ESP_OK) {
+
+    if (ret != ESP_OK) {
         ESP_LOGE(TAG, "SCCB_Read Failed addr:0x%02x, reg:0x%02x, data:0x%02x, ret:%d", slv_addr, reg, data, ret);
     }
-    ESP_LOGE(TAG, "SCCB_Read Blub addr:0x%02x, reg:0x%02x, data:0x%02x, ret:%d", slv_addr, reg, data, ret);
+
+    // 🔹 **Write to log file**
+    FILE *log_file = fopen("/spiffs/log.txt", "a");
+    if (log_file != NULL) {
+        fprintf(log_file, "SCCB_Read addr:0x%02x, reg:0x%02x, data:0x%02x, ret:%d\n", slv_addr, reg, data, ret);
+        fclose(log_file);
+    } else {
+        ESP_LOGE(TAG, "Failed to open log file!");
+    }
 
     return data;
 }
+
 
 int SCCB_Write(uint8_t slv_addr, uint8_t reg, uint8_t data)
 {
