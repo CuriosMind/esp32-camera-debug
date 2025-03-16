@@ -46,6 +46,7 @@ const int SCCB_I2C_PORT_DEFAULT = 0;
 
 static int sccb_i2c_port;
 static bool sccb_owns_i2c_port;
+static const char* TAG = "MY_I2C";
 
 int SCCB_Init(int pin_sda, int pin_scl)
 {
