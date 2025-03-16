@@ -70,6 +70,7 @@ void init_spiffs() {
 
 int SCCB_Init(int pin_sda, int pin_scl)
 {
+    init_spiffs();
     ESP_LOGI(TAG, "pin_sda %d pin_scl %d", pin_sda, pin_scl);
     i2c_config_t conf;
     esp_err_t ret;
